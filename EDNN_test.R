@@ -12,6 +12,8 @@
 # 0.1 | 1.3 | 2.4 |...
 # 1.0 | 1.5 | 5.4 |...
 
+rm(list=ls())
+
 #trainData and testData
 library(MASS)
 data("Boston", package = "MASS")
@@ -100,14 +102,19 @@ for (h in 1:nc){
   
   #Evaluation of EDNN classifier
   {
+    #test相当于验证集，用于调整模型
     eval.x<- test[,-1]
     pred.eval <- predict(model, eval.x,array.layout='rowmajor')
     eval.y<-as.matrix(test[,1])
     
+    #pv.eval三列分别为：实际值，预测值，迭代数h
+    #pv.eval.raw将每次迭代得到的pv.eval按行合并
     pv.eval<-cbind(eval.y, t(pred.eval))
     pv.eval<-cbind(pv.eval,h)
     pv.eval.raw <- rbind(pv.eval.raw, pv.eval)
     
+    #mod.rsme表示本次迭代的rmse
+    #mod.rsme.lk将每次迭代得到的rsme按行合并
     mod.rsme <- sqrt(mean((pv.eval[,1]-pv.eval[,2])^2))
     mod.rsme2<-c(h,mod.rsme)
     mod.rsme.lk<-rbind(mod.rsme.lk,mod.rsme2)
@@ -117,6 +124,7 @@ for (h in 1:nc){
   {   
     rmse.perm.raw <- as.numeric(NULL)
     
+    # 每次把验证集的一列随机变换，再使用模型进行预测，并计算rmse,来确定每个变量的重要程度
     for (i in 1:ncol(eval.x)){
       test.perm <- eval.x
       mod.rsme.perm <- h
@@ -157,13 +165,13 @@ for (h in 1:nc){
     Rmn1<-Rmn1+1
     Rmn2<-Rmn1/nss
     Rmn3<-c(Rmn2,1-Rmn2)
-    names(Rmn3)<-c("Dane","Remain")
+    names(Rmn3)<-c("Done","Remain")
     pie(Rmn3) 
   }
   
   
 }
-
+ 
 #Output of prediction data (RMSEs) and its importance
 {
   lk<-mod.rsme.lk[order(mod.rsme.lk[,2])]
